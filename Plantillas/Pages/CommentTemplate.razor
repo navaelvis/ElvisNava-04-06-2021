@@ -1,0 +1,21 @@
+﻿<tr>
+    <td colspan="2">@Email</td>
+</tr>
+<tr>
+    <td colspan="2">@Name</td>
+</tr>
+<tr>
+    <td colspan="4" style="width: 850px;">@Body</td>
+</tr>
+<tr>
+    <td><hr /></td>
+</tr>
+
+@code {
+    [Parameter]
+    public string Email { get; set; }
+    [Parameter]
+    public string Name { get; set; }
+    [Parameter]
+    public string Body { get; set; }
+}

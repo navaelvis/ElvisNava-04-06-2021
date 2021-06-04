@@ -1,0 +1,145 @@
+﻿@page "/"
+
+@using Models;
+@using Plantillas.Pages;
+
+@inject HttpClient httpClient
+
+<table>
+    <tr>
+        <td>
+            <p>Este proyecto esta basado en Blazor WebAssembly, para ejecutar todo el código del lado del cliente, permitiendo tambien el uso de llamadas asíncronas al API https://jsonplaceholder.typicode.com/. </p>
+            <p>También se usó los componentes de plantillas en un proyecto adicional, para mostrar comentarios.</p>
+        </td>
+    </tr>
+</table>
+<hr />
+<h3>Albums</h3>
+<br />
+@{
+    if (albums.Count > 0)
+    {
+        <select @bind="AlbumSeleccionado">
+            @{
+                <option value="0">Seleccione...</option>
+                foreach (Album album in albums)//.OrderBy(alb => alb.title))
+                {
+                    <option value="@album.id">@album.title</option>
+                }
+            }
+        </select>
+        <input type="button" value="Visualizar Album" @onclick="VisualizarAlbum" />
+    }
+    else
+    {
+        <h4>Cargando &aacute;lbunes...</h4>
+    }
+}
+<br />
+@{
+    if (photos.Count > 0)
+    {
+        <table>
+            @{
+                foreach (Photo photo in photos)
+                {
+                    <tr>
+                        <td>@photo.id</td>
+                        <td>@photo.title</td>
+                        <td><img src="@photo.thumbnailUrl" /></td>
+                        <td><input type="button" value="Visualizar Comentarios" @onclick="(async () => await VisualizarComentarios(photo.id))" /></td>
+                    </tr>
+                    <tr style="display: @( idAlbumParaVisualizarComentarios == photo.id ? "contents;" : "none;")">
+                        <td colspan="4">
+                            <table>
+                                @{
+                                    if (consultandoComentarios)
+                                    { 
+                                        <tr>
+                                            <td>
+                                                <h6>Cargando comentarios...</h6>
+                                            </td>
+                                        </tr>
+                                    }
+                                    else if (comments.Count(com => com.postId == photo.id) == 0)
+                                    {
+                                        <tr>
+                                            <td style="text-align: center; background-color: orange;">No Comments!!!</td>
+                                        </tr>
+                                    }
+                                    else
+                                    {
+                                        @foreach (Comment comment in comments.Where(com => com.postId == photo.id))
+                                        {
+                                           <CommentTemplate Email="@comment.email" Name="@comment.name" Body="@comment.body" ></CommentTemplate>
+                                            @*<tr>
+                                                <td colspan="2">@comment.email</td>
+                                            </tr>
+                                            <tr>
+                                                <td colspan="2">@comment.name</td>
+                                            </tr>
+                                            <tr>
+                                                <td colspan="4" style="width: 850px;">@comment.body</td>
+                                            </tr>
+                                            <tr>
+                                                <td><hr /></td>
+                                            </tr>*@
+                                        }
+                                    }
+                                }
+                            </table>
+                        </td>
+                    </tr>
+                }
+            }
+        </table>
+    }
+    else if (consultandoPhotos)
+    {
+        <h6>Cargando fotos...</h6>
+    }
+}
+
+@code {
+    List<Album> albums = new List<Album>();
+    List<Photo> photos = new List<Photo>();
+    List<Photo> photosToShow = new List<Photo>();
+    List<Comment> comments = new List<Comment>();
+
+
+    int AlbumSeleccionado = 0;
+    int idAlbumParaVisualizarComentarios = 0;
+    bool consultandoPhotos = false;
+    bool consultandoComentarios = false;
+    string albumsURI = "https://jsonplaceholder.typicode.com/albums";
+    string photosURI = "https://jsonplaceholder.typicode.com/photos";
+    string commentsURI = "https://jsonplaceholder.typicode.com/comments";
+
+    protected override async Task OnInitializedAsync()
+    {
+        albums = await httpClient.GetFromJsonAsync<List<Album>>(albumsURI);
+    }
+
+    private async void VisualizarAlbum()
+    {
+        if (AlbumSeleccionado > 0)
+        {
+            consultandoPhotos = true;
+            await Task.Delay(1000);
+            photos = await httpClient.GetFromJsonAsync<List<Photo>>($"{photosURI}?albumId={AlbumSeleccionado}");
+            consultandoPhotos = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task VisualizarComentarios(int id)
+    {
+        idAlbumParaVisualizarComentarios = id;
+
+        consultandoComentarios = true;
+        await Task.Delay(1000);
+        comments = await httpClient.GetFromJsonAsync<List<Comment>>($"{commentsURI}?postId={id}");
+        consultandoComentarios = false;
+        StateHasChanged();
+    }
+}
